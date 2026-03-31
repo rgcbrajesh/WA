@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp Multi-Messenger | Premium Excel Tool</title>
+    <!-- Google Fonts: Inter & Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <!-- SheetJS for Excel Parsing -->
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Batch Overlay -->
+        <div id="batch-overlay" class="batch-overlay hidden">
+            <div class="batch-content card glass">
+                <div class="batch-header">
+                    <span class="pulse-icon"></span>
+                    <h3>Batch Campaign Active</h3>
+                    <button class="btn-close" onclick="stopBatch()"><i data-lucide="x"></i></button>
+                </div>
+                <div class="batch-stats">
+                    <span id="batch-progress">Contact 1 of 10</span>
+                </div>
+                <div class="batch-progress-bar"><div id="batch-progress-inner"></div></div>
+                <div class="batch-current-info">
+                    <p id="batch-current-name">Sending to: <strong>Unknown</strong></p>
+                </div>
+                <div class="batch-actions">
+                    <button class="btn btn-secondary" onclick="stopBatch()">Stop</button>
+                    <button class="btn btn-primary" onclick="nextInBatch()">
+                        <i data-lucide="skip-forward"></i> Send Next
+                    </button>
+                </div>
+                <p class="batch-helper">Clicks "Send Next" after completing the WhatsApp message.</p>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">
+                <i data-lucide="message-square" class="logo-icon"></i>
+                <span>WA Messenger</span>
+            </div>
+            <nav>
+                <div class="nav-item active"><i data-lucide="layout-dashboard"></i> Dashboard</div>
+                <div class="nav-item"><i data-lucide="users"></i> Contacts</div>
+                <div class="nav-item"><i data-lucide="send"></i> Campaigns</div>
+                <div class="nav-item"><i data-lucide="settings"></i> Settings</div>
+            </nav>
+            <div class="user-profile">
+                <div class="avatar">JM</div>
+                <div class="user-info">
+                    <span class="user-name">Premium User</span>
+                    <span class="user-role">Professional Plan</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="top-header">
+                <h1>Dashboard</h1>
+                <div class="header-actions">
+                    <button class="btn btn-secondary" onclick="resetApp()">
+                        <i data-lucide="refresh-cw"></i> Reset
+                    </button>
+                    <button class="btn btn-primary" id="generate-btn" disabled>
+                        <i data-lucide="rocket"></i> Launch Campaign
+                    </button>
+                </div>
+            </header>
+
+            <div class="grid-container">
+                <!-- Section 1: Upload -->
+                <section class="card glass upload-section">
+                    <div class="card-header">
+                        <span class="step-badge">Step 1</span>
+                        <h3>Upload Excel / CSV</h3>
+                    </div>
+                    <div class="drop-zone" id="drop-zone">
+                        <i data-lucide="cloud-upload" class="upload-icon"></i>
+                        <p>Drag & drop your file or <span>browse</span></p>
+                        <input type="file" id="file-input" accept=".xlsx, .xls, .csv" hidden>
+                    </div>
+                    <div id="file-status" class="file-status hidden">
+                        <i data-lucide="file-check"></i>
+                        <span id="filename-display">filename.xlsx</span>
+                    </div>
+                </section>
+
+                <!-- Section 2: Template -->
+                <section class="card glass template-section">
+                    <div class="card-header">
+                        <span class="step-badge">Step 2</span>
+                        <h3>Message Template</h3>
+                    </div>
+                    <div class="form-group">
+                        <label>Select Phone Column</label>
+                        <select id="phone-column" class="form-select">
+                            <option value="">Select phone column...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Message Content</label>
+                        <p class="helper-text">Click "Add" to insert variables at the cursor position</p>
+                        <div class="variable-inserter">
+                            <select id="variable-select" class="form-select">
+                                <option value="">Select variable...</option>
+                            </select>
+                            <button type="button" class="btn btn-secondary btn-sm" onclick="addVariableToTemplate()">
+                                <i data-lucide="plus"></i> Add
+                            </button>
+                        </div>
+                        <textarea id="message-template" placeholder="Hello {Name}, your order {Order ID} is ready!"></textarea>
+                    </div>
+                </section>
+
+                <!-- Section 3: Preview -->
+                <section class="card glass preview-section full-width">
+                    <div class="card-header">
+                        <span class="step-badge">Step 3</span>
+                        <h3>Data Preview & Actions</h3>
+                    </div>
+                    <div class="table-wrapper">
+                        <table id="preview-table">
+                            <thead>
+                                <tr id="table-header">
+                                    <th>No Data Uploaded</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-body">
+                                <!-- Data rows will go here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+    </script>
+</body>
+</html>
