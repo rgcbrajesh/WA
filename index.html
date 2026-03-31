@@ -16,6 +16,15 @@
 </head>
 <body>
     <div class="app-container">
+        <!-- App Header (Logo) -->
+        <header class="app-mobile-header">
+            <div class="logo">
+                <i data-lucide="message-square" class="logo-icon"></i>
+                <span>WA Messenger</span>
+            </div>
+            <div class="avatar">JM</div>
+        </header>
+
         <!-- Batch Overlay -->
         <div id="batch-overlay" class="batch-overlay hidden">
             <div class="batch-content card glass">
@@ -41,26 +50,13 @@
             </div>
         </div>
 
-        <!-- Sidebar -->
-        <aside class="sidebar">
-            <div class="logo">
-                <i data-lucide="message-square" class="logo-icon"></i>
-                <span>WA Messenger</span>
-            </div>
-            <nav>
-                <div class="nav-item active"><i data-lucide="layout-dashboard"></i> Dashboard</div>
-                <div class="nav-item"><i data-lucide="users"></i> Contacts</div>
-                <div class="nav-item"><i data-lucide="send"></i> Campaigns</div>
-                <div class="nav-item"><i data-lucide="settings"></i> Settings</div>
-            </nav>
-            <div class="user-profile">
-                <div class="avatar">JM</div>
-                <div class="user-info">
-                    <span class="user-name">Premium User</span>
-                    <span class="user-role">Professional Plan</span>
-                </div>
-            </div>
-        </aside>
+        <!-- Mobile Bottom Nav -->
+        <nav class="bottom-nav">
+            <div class="nav-item active"><i data-lucide="layout-dashboard"></i><span>Home</span></div>
+            <div class="nav-item"><i data-lucide="users"></i><span>Contacts</span></div>
+            <div class="nav-item"><i data-lucide="send"></i><span>Campaigns</span></div>
+            <div class="nav-item"><i data-lucide="settings"></i><span>Settings</span></div>
+        </nav>
 
         <!-- Main Content -->
         <main class="main-content">

@@ -117,18 +117,21 @@ function updateTableBody() {
         
         // Row Number
         const tdIdx = document.createElement('td');
+        tdIdx.setAttribute('data-label', '#');
         tdIdx.textContent = index + 1;
         tr.appendChild(tdIdx);
 
         // Data Columns
         columns.forEach(col => {
             const td = document.createElement('td');
+            td.setAttribute('data-label', col);
             td.textContent = row[col] || '';
             tr.appendChild(td);
         });
 
         // WhatsApp Action
         const tdAction = document.createElement('td');
+        tdAction.setAttribute('data-label', 'Action');
         const waLink = generateWhatsAppLink(row, template, phoneCol);
         
         if (waLink) {
