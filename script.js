@@ -2,6 +2,10 @@ let excelData = [];
 let columns = [];
 let batchIndex = -1;
 let isBatchActive = false;
+let isAutoAdvance = false;
+let isPaused = false;
+let advanceTimer = null;
+let countdownInterval = null;
 
 // DOM Elements
 const dropZone = document.getElementById('drop-zone');
@@ -46,10 +50,13 @@ function handleFile(file) {
         const workbook = XLSX.read(data, { type: 'array' });
         const firstSheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[firstSheetName];
-        
+
         // Convert to JSON
-        excelData = XLSX.utils.sheet_to_json(worksheet);
-        
+        excelData = XLSX.utils.sheet_to_json(worksheet).map(row => ({
+            ...row,
+            status: 'Pending'
+        }));
+
         if (excelData.length > 0) {
             columns = Object.keys(excelData[0]);
             updateUIAfterUpload(file.name);
@@ -74,7 +81,7 @@ function updateUIAfterUpload(filename) {
 function populateColumnSelects() {
     phoneSelect.innerHTML = '<option value="">Select phone column...</option>';
     variableSelect.innerHTML = '<option value="">Select variable...</option>';
-    
+
     columns.forEach(col => {
         // Phone Select
         const phoneOpt = document.createElement('option');
@@ -95,7 +102,7 @@ function populateColumnSelects() {
 
 function renderTable() {
     // Header
-    tableHeader.innerHTML = '<th>#</th>';
+    tableHeader.innerHTML = '<th>#</th><th>Status</th>';
     columns.forEach(col => {
         const th = document.createElement('th');
         th.textContent = col;
@@ -114,12 +121,22 @@ function updateTableBody() {
 
     excelData.forEach((row, index) => {
         const tr = document.createElement('tr');
-        
+        if (isBatchActive && index === batchIndex) {
+            tr.classList.add('row-active');
+        }
+
         // Row Number
         const tdIdx = document.createElement('td');
         tdIdx.setAttribute('data-label', '#');
         tdIdx.textContent = index + 1;
         tr.appendChild(tdIdx);
+
+        // Status Badge
+        const tdStatus = document.createElement('td');
+        tdStatus.setAttribute('data-label', 'Status');
+        const statusClass = `badge-${row.status.toLowerCase()}`;
+        tdStatus.innerHTML = `<span class="status-badge ${statusClass}">${row.status}</span>`;
+        tr.appendChild(tdStatus);
 
         // Data Columns
         columns.forEach(col => {
@@ -133,7 +150,7 @@ function updateTableBody() {
         const tdAction = document.createElement('td');
         tdAction.setAttribute('data-label', 'Action');
         const waLink = generateWhatsAppLink(row, template, phoneCol);
-        
+
         if (waLink) {
             const a = document.createElement('a');
             a.href = waLink;
@@ -142,13 +159,13 @@ function updateTableBody() {
             a.innerHTML = '<i data-lucide="send"></i> Send';
             tdAction.appendChild(a);
         } else {
-            tdAction.innerHTML = '<span style="color: var(--text-secondary); font-size: 0.8rem;">No Phone</span>';
+            tdAction.innerHTML = '<span style="color: var(--text-secondary); font-size: 0.8rem;">Invalid / No Phone</span>';
         }
-        
+
         tr.appendChild(tdAction);
         tableBody.appendChild(tr);
     });
-    
+
     // Re-initialize icons in the table
     lucide.createIcons();
 }
@@ -161,7 +178,10 @@ function generateWhatsAppLink(row, template, phoneCol) {
 
     // Clean phone number (remove +, spaces, dashes)
     phone = String(phone).replace(/\D/g, '');
-    
+
+    // Basic Validation: must be at least 7 digits
+    if (phone.length < 7) return null;
+
     // Simple template replacement
     let message = template || "Hello!";
     columns.forEach(col => {
@@ -169,7 +189,8 @@ function generateWhatsAppLink(row, template, phoneCol) {
         message = message.replace(new RegExp(placeholder, 'g'), row[col] || '');
     });
 
-    return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+    // Use web.whatsapp.com to attempt forcing the browser version
+    return `https://web.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(message)}`;
 }
 
 function addVariableToTemplate() {
@@ -204,21 +225,68 @@ function resetApp() {
 
 // --- Batch Sending Logic ---
 
+function toggleAutoAdvance() {
+    isAutoAdvance = !isAutoAdvance;
+    const ctrl = document.getElementById('auto-advance-ctrl');
+    const timerDisplay = document.getElementById('timer-display');
+    const helperText = document.getElementById('batch-helper-text');
+    const pauseBtn = document.getElementById('pause-btn');
+
+    if (isAutoAdvance) {
+        ctrl.classList.add('auto-advance-active');
+        timerDisplay.classList.remove('hidden');
+        pauseBtn.classList.remove('hidden');
+        helperText.textContent = "Will automatically open the next contact after the delay.";
+        if (isBatchActive && !isPaused) startAutoAdvanceTimer();
+    } else {
+        ctrl.classList.remove('auto-advance-active');
+        timerDisplay.classList.add('hidden');
+        pauseBtn.classList.add('hidden');
+        helperText.textContent = "Clicks 'Send Next' after completing the WhatsApp message.";
+        clearTimers();
+    }
+}
+
+function togglePauseBatch() {
+    if (!isBatchActive) return;
+    isPaused = !isPaused;
+
+    const overlay = document.getElementById('batch-overlay');
+    const pauseBtn = document.getElementById('pause-btn');
+
+    if (isPaused) {
+        overlay.classList.add('paused');
+        pauseBtn.innerHTML = '<i data-lucide="play"></i> Resume';
+        clearTimers();
+    } else {
+        overlay.classList.remove('paused');
+        pauseBtn.innerHTML = '<i data-lucide="pause"></i> Pause';
+        if (isAutoAdvance) startAutoAdvanceTimer();
+    }
+    lucide.createIcons();
+}
+
 function startBatch() {
     if (!phoneSelect.value) {
         alert('Please select the column that contains phone numbers first!');
         return;
     }
-    
+
     if (excelData.length === 0) {
         alert('Please upload an Excel file first.');
         return;
     }
 
     const count = excelData.length;
-    if (confirm(`This will start a batch for ${count} contacts. Only ONE new tab will open, and you can clicked "Next" to send to the next person. Ready?`)) {
+    let message = `This will start a batch for ${count} contacts. Ready?`;
+    if (isAutoAdvance) {
+        message = `This will start an AUTOMATIC campaign for ${count} contacts. It will open tabs every few seconds. Ready?`;
+    }
+
+    if (confirm(message)) {
         batchIndex = 0;
         isBatchActive = true;
+        isPaused = false;
         document.getElementById('batch-overlay').classList.remove('hidden');
         processBatchStep();
     }
@@ -239,26 +307,66 @@ function processBatchStep() {
     // Update UI
     document.getElementById('batch-progress').textContent = `Contact ${batchIndex + 1} of ${excelData.length}`;
     document.getElementById('batch-progress-inner').style.width = `${((batchIndex + 1) / excelData.length) * 100}%`;
-    document.getElementById('batch-current-name').innerHTML = `Sending to: <strong>${row[columns[0]] || 'Select Contact'}</strong>`;
+    document.getElementById('batch-current-name').innerHTML = `Processing: <strong>${row[columns[0]] || 'Select Contact'}</strong>`;
 
     if (url) {
-        // OPEN or REFRESH the named window
+        row.status = 'Drafted';
+        updateTableBody(); // Highlight row & update badge
         window.open(url, 'WA_BATCH_TAB');
+
+        if (isAutoAdvance && !isPaused) {
+            startAutoAdvanceTimer();
+        }
     } else {
-        alert(`No phone number found for row ${batchIndex + 1}. Skipping...`);
-        nextInBatch();
+        console.warn(`Invalid or no phone found for row ${batchIndex + 1}. Skipping...`);
+        row.status = 'Invalid';
+        updateTableBody();
+
+        // Brief delay before skipping automatically if in auto-advance mode
+        if (isAutoAdvance && !isPaused) {
+            setTimeout(nextInBatch, 500);
+        } else if (!isAutoAdvance) {
+            // If manual, just sit there so the user sees the 'Invalid' status
+        }
     }
 }
 
+function startAutoAdvanceTimer() {
+    clearTimers();
+    let delay = parseInt(document.getElementById('advance-delay').value) || 5;
+    let remaining = delay;
+
+    document.getElementById('timer-seconds').textContent = remaining;
+
+    countdownInterval = setInterval(() => {
+        remaining--;
+        document.getElementById('timer-seconds').textContent = remaining;
+        if (remaining <= 0) {
+            clearInterval(countdownInterval);
+            nextInBatch();
+        }
+    }, 1000);
+}
+
+function clearTimers() {
+    if (countdownInterval) clearInterval(countdownInterval);
+    if (advanceTimer) clearTimeout(advanceTimer);
+}
+
 function nextInBatch() {
+    clearTimers();
     batchIndex++;
     processBatchStep();
 }
 
 function stopBatch() {
     isBatchActive = false;
+    isPaused = false;
     batchIndex = -1;
+    clearTimers();
     document.getElementById('batch-overlay').classList.add('hidden');
+    document.getElementById('batch-overlay').classList.remove('paused');
+    updateTableBody();
 }
 
 generateBtn.addEventListener('click', startBatch);

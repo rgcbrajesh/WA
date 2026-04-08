@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,13 +8,16 @@
     <!-- Google Fonts: Inter & Outfit -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <!-- SheetJS for Excel Parsing -->
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
 </head>
+
 <body>
     <div class="app-container">
         <!-- App Header (Logo) -->
@@ -36,17 +40,37 @@
                 <div class="batch-stats">
                     <span id="batch-progress">Contact 1 of 10</span>
                 </div>
-                <div class="batch-progress-bar"><div id="batch-progress-inner"></div></div>
+                <div class="batch-progress-bar">
+                    <div id="batch-progress-inner"></div>
+                </div>
+
+                <div class="auto-advance-container" id="auto-advance-ctrl">
+                    <div class="toggle-row" onclick="toggleAutoAdvance()">
+                        <span>Auto-Advance to next</span>
+                        <div class="toggle-switch" id="auto-toggle"></div>
+                    </div>
+                    <div class="delay-input-group">
+                        <label>Delay (seconds):</label>
+                        <input type="number" id="advance-delay" value="5" min="2" max="60">
+                    </div>
+                </div>
+
                 <div class="batch-current-info">
                     <p id="batch-current-name">Sending to: <strong>Unknown</strong></p>
+                    <div id="timer-display" class="timer-display hidden">Next in: <span id="timer-seconds">5</span>s
+                    </div>
                 </div>
                 <div class="batch-actions">
                     <button class="btn btn-secondary" onclick="stopBatch()">Stop</button>
-                    <button class="btn btn-primary" onclick="nextInBatch()">
+                    <button class="btn btn-pause hidden" id="pause-btn" onclick="togglePauseBatch()">
+                        <i data-lucide="pause"></i> Pause
+                    </button>
+                    <button class="btn btn-primary" id="next-btn" onclick="nextInBatch()">
                         <i data-lucide="skip-forward"></i> Send Next
                     </button>
                 </div>
-                <p class="batch-helper">Clicks "Send Next" after completing the WhatsApp message.</p>
+                <p class="batch-helper" id="batch-helper-text">Clicks "Send Next" after completing the WhatsApp message.
+                </p>
             </div>
         </div>
 
@@ -113,7 +137,8 @@
                                 <i data-lucide="plus"></i> Add
                             </button>
                         </div>
-                        <textarea id="message-template" placeholder="Hello {Name}, your order {Order ID} is ready!"></textarea>
+                        <textarea id="message-template"
+                            placeholder="Hello {Name}, your order {Order ID} is ready!"></textarea>
                     </div>
                 </section>
 
@@ -127,6 +152,7 @@
                         <table id="preview-table">
                             <thead>
                                 <tr id="table-header">
+                                    <th>Status</th>
                                     <th>No Data Uploaded</th>
                                 </tr>
                             </thead>
@@ -146,4 +172,5 @@
         lucide.createIcons();
     </script>
 </body>
+
 </html>
